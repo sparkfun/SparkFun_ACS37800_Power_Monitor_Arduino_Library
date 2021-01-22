@@ -1,8 +1,8 @@
 SparkFun ACS37800 Power Monitor Arduino Library
 ===========================================================
- [![SparkX ACS37800 Power Meter (Qwiic) (SPX-nnnnn)]()](https://www.sparkfun.com/products/nnnnn)
+ [![SparkX ACS37800 Power Meter (Qwiic) (SPX-17873)]()](https://www.sparkfun.com/products/17873)
 
-[*SparkX ACS37800 Power Meter (Qwiic) (SPX-nnnnn)*](https://www.sparkfun.com/products/nnnnn)
+[*SparkX ACS37800 Power Meter (Qwiic) (SPX-17873)*](https://www.sparkfun.com/products/17873)
 
 The Allegro MicroSystems ACS37800 power monitoring IC greatly simplifies the addition of power monitoring to many powered systems.
 
@@ -17,7 +17,7 @@ User configuration of the IC is available through on-chip EEPROM.
 Although the ACS37800 is available with both I<sup>2</sup>C and SPI interfaces, this library currently only supports communication over I2C.
 
 SparkFun labored with love to create this code. Feel like supporting open source hardware?
-Buy a [board](https://www.sparkfun.com/products/nnnnn) from SparkFun!
+Buy a [board](https://www.sparkfun.com/products/17873) from SparkFun!
 
 Repository Contents
 -------------------
@@ -35,7 +35,7 @@ Documentation
 
 Products that use this library
 --------------
-* [SPX-nnnnn](https://www.sparkfun.com/products/nnnnn)- SparkX Version
+* [SPX-17873](https://www.sparkfun.com/products/17873)- SparkX Version
 
 License Information
 -------------------
