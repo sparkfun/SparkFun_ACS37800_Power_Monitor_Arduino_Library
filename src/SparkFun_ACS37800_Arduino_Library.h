@@ -10,7 +10,7 @@
 
   SparkFun labored with love to create this code. Feel like supporting open
   source hardware? Buy a board from SparkFun!
-  https://www.sparkfun.com/products/nnnnn
+  https://www.sparkfun.com/products/17873
 
 */
 
@@ -28,8 +28,8 @@ const uint8_t ACS37800_DEFAULT_I2C_ADDRESS = 0x61;
 //Customer Access Code - stored in volatile register 0x2F
 const uint32_t ACS37800_CUSTOMER_ACCESS_CODE = 0x4F70656E;
 
-//Default sense resistance for voltage measurement (kOhms)
-const float ACS37800_DEFAULT_SENSE_RES = 8.2;
+//Default sense resistance for voltage measurement (Ohms)
+const int ACS37800_DEFAULT_SENSE_RES = 8200;
 
 //Error result
 typedef enum {
@@ -70,7 +70,8 @@ const uint8_t ACS37800_REGISTER_VOLATILE_2D = 0x2D;
 const uint8_t ACS37800_REGISTER_VOLATILE_2F = 0x2F;
 const uint8_t ACS37800_REGISTER_VOLATILE_30 = 0x30;
 
-//EEPROM Registers : Bit Fields
+//EEPROM Registers : Bit Field definitions
+
 typedef struct
 {
   union
@@ -88,6 +89,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_0B_t;
+
 typedef struct
 {
   union
@@ -103,6 +105,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_0C_t;
+
 typedef struct
 {
   union
@@ -122,6 +125,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_0D_t;
+
 typedef struct
 {
   union
@@ -143,6 +147,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_0E_t;
+
 typedef struct
 {
   union
@@ -162,6 +167,27 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_0F_t;
+
+//Shadow Registers : Bit Field definitions
+
+typedef struct
+{
+  union
+  {
+    uint32_t all;
+    struct
+    {
+      uint32_t qvo_fine : 9;
+      uint32_t sns_fine : 9;
+      uint32_t crs_sns : 3;
+      uint32_t iavgselen : 1;
+      //uint32_t pavgselen : 1; // Not present in shadow register?!
+    } bits;
+  } data;
+} ACS37800_REGISTER_1B_t;
+
+//Volatile Registers : Bit Field definitions
+
 typedef struct
 {
   union
@@ -174,6 +200,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_20_t;
+
 typedef struct
 {
   union
@@ -186,6 +213,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_21_t;
+
 typedef struct
 {
   union
@@ -200,6 +228,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_22_t;
+
 typedef struct
 {
   union
@@ -211,6 +240,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_25_t;
+
 typedef struct
 {
   union
@@ -223,6 +253,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_26_t;
+
 typedef struct
 {
   union
@@ -235,6 +266,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_27_t;
+
 typedef struct
 {
   union
@@ -246,6 +278,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_28_t;
+
 typedef struct
 {
   union
@@ -257,6 +290,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_29_t;
+
 typedef struct
 {
   union
@@ -269,6 +303,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_2A_t;
+
 typedef struct
 {
   union
@@ -280,6 +315,7 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_2C_t;
+
 typedef struct
 {
   union
@@ -297,6 +333,7 @@ typedef struct
 } ACS37800_REGISTER_2D_t;
 
 //Register Field Enums
+
 typedef enum
 {
   ACS37800_CRS_SNS_1X = 0,
@@ -308,6 +345,7 @@ typedef enum
   ACS37800_CRS_SNS_5POINT5X,
   ACS37800_CRS_SNS_8X
 } ACS37800_CRS_SNS_e; //Coarse gain for the current channel
+
 typedef enum
 {
   ACS37800_FLTDLY_0000 = 0,
@@ -318,6 +356,7 @@ typedef enum
   ACS37800_FLTDLY_2325,
   ACS37800_FLTDLY_2775 //27.75 microseconds
 } ACS37800_FLTDLY_e; //Fault Delay
+
 typedef enum
 {
   ACS37800_DIO0_FUNC_ZERO_CROSSING = 0,
@@ -325,6 +364,7 @@ typedef enum
   ACS37800_DIO0_FUNC_UNDERVOLTAGE,
   ACS37800_DIO0_FUNC_OV_OR_UV
 } ACS37800_DIO0_FUNC_e; //DIO_0 Function
+
 typedef enum
 {
   ACS37800_DIO1_FUNC_OVERCURRENT = 0,
@@ -332,6 +372,7 @@ typedef enum
   ACS37800_DIO1_FUNC_OVERVOLTAGE,
   ACS37800_DIO1_FUNC_OV_OR_UV_OR_OCF_LAT
 } ACS37800_DIO1_FUNC_e; //DIO_1 Function
+
 typedef enum
 {
   ACS37800_EEPROM_ECC_NO_ERROR = 0,
@@ -342,7 +383,7 @@ typedef enum
 
 class ACS37800
 {
-    // user-accessible "public" interface
+  // User-accessible "public" interface
   public:
 
     //Default constructor
@@ -359,10 +400,23 @@ class ACS37800
     ACS37800ERR writeRegister(uint32_t data, uint8_t address);
 
     //Configurable Settings
+    //By default, settings are written to the shadow registers only. Set _eeprom to true to write to EEPROM too.
+    ACS37800ERR setCurrentCoarseGain(ACS37800_CRS_SNS_e gain, boolean _eeprom = false);
 
+    //Change the I2C address in EEPROM (i2c_slv_addr)
+    //This also sets the i2c_dis_slv_addr flag so the DIO pins will no longer define the I2C address
     ACS37800ERR setI2Caddress(uint8_t newAddress);
 
+    //Basic methods for accessing the volatile registers
+    ACS37800ERR readRMS(float *vRMS, float *iRMS); // Read volatile register 0x20. Return the vRMS and iRMS.
+    ACS37800ERR readInstantaneous(float *vInst, float *iInst); // Read volatile register 0x2A. Return the vInst and iInst.
+    ACS37800ERR readErrorFlags(ACS37800_REGISTER_2D_t *errorFlags); // Read volatile register 0x2D. Return its contents in errorFlags.
+
+    //Change the value of the sense resistor
+    void setSensRes(int newRes); // Change the value of _senseResistance (Ohms)
+
   private:
+
     //This stores the requested i2c port
     TwoWire * _i2cPort;
 
@@ -373,8 +427,8 @@ class ACS37800
     //ACS37800's I2C address
     uint8_t _ACS37800Address = ACS37800_DEFAULT_I2C_ADDRESS;
 
-    //The value of the sense resistor for voltage measurement in kOhms
-    float _senseResistance = ACS37800_DEFAULT_SENSE_RES;
+    //The value of the sense resistor for voltage measurement in Ohms
+    int _senseResistance = ACS37800_DEFAULT_SENSE_RES;
 
 };
 

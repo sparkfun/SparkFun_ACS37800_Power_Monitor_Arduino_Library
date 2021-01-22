@@ -6,14 +6,14 @@
   License: please see LICENSE.md for details
 
   Feel like supporting our work? Buy a board from SparkFun!
-  https://www.sparkfun.com/products/nnnnn
+  https://www.sparkfun.com/products/17873
 */
 
 #include "SparkFun_ACS37800_Arduino_Library.h" // Click here to get the library: http://librarymanager/All#SparkFun_ACS37800
 #include <Wire.h>
 
-#define OLD_ADDRESS 0x61 //This is the address the ACS37800 is currently using
-#define NEW_ADDRESS 0x62 //This is the address we are changing to
+#define OLD_ADDRESS 0x61 //Set this to the address the ACS37800 is currently using
+#define NEW_ADDRESS 0x62 //Set this to the address we are changing to
 
 ACS37800 mySensor; //Create an object of the ACS37800 class
 
@@ -39,7 +39,6 @@ void setup()
   Serial.print(F("Changing the address to 0x"));
   Serial.println(NEW_ADDRESS);
 
-  //Initialize sensor
   if (mySensor.setI2Caddress(NEW_ADDRESS) == ACS37800_SUCCESS)
   {
     Serial.println(F("Address changed! Please power cycle the sensor to use the new address. Freezing..."));
