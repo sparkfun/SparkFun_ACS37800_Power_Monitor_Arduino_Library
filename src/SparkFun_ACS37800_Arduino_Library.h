@@ -20,10 +20,10 @@
 #include "Arduino.h"
 #include <Wire.h>
 
-//Default I2C Address
-//This is the address when DIO_0 and DIO_1 are 0V on start-up
-//The address can be configured in EEPROM too
-const uint8_t ACS37800_DEFAULT_I2C_ADDRESS = 0x61;
+// The default I2C Address is 0x60 when DIO_0 and DIO_1 are 0V on start-up
+// (There is a typo in the datasheet that suggests it is 0x61. It isn't...!)
+// The address can be configured in EEPROM too using setI2Caddress
+const uint8_t ACS37800_DEFAULT_I2C_ADDRESS = 0x60;
 
 //Customer Access Code - stored in volatile register 0x2F
 const uint32_t ACS37800_CUSTOMER_ACCESS_CODE = 0x4F70656E;

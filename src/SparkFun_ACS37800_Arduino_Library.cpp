@@ -28,17 +28,13 @@ bool ACS37800::begin(uint8_t address, TwoWire &wirePort)
   _ACS37800Address = address; //Grab which i2c address the user wants us to use
   _i2cPort = &wirePort; //Grab which port the user wants us to use
 
-  uint32_t accessCode; //Read and validate the access code
-  ACS37800ERR error = readRegister(&accessCode, ACS37800_REGISTER_VOLATILE_2F);
-
-  if ((error != ACS37800_SUCCESS) || (accessCode != ACS37800_CUSTOMER_ACCESS_CODE))
+  Wire.beginTransmission(address);
+  if (Wire.endTransmission() != 0) // Did we detect something?
   {
     if (_printDebug == true)
     {
-      _debugPort->print(F("begin: readRegister error: "));
-      _debugPort->println(error);
-      _debugPort->print(F("begin: accessCode: 0x"));
-      _debugPort->println(accessCode, HEX);
+      _debugPort->print(F("ACS37800::begin: failed to detect device with address 0x"));
+      _debugPort->println(address, HEX);
     }
     return (false);
   }
@@ -121,7 +117,19 @@ ACS37800ERR ACS37800::writeRegister(uint32_t data, uint8_t address)
 ACS37800ERR ACS37800::setI2Caddress(uint8_t newAddress)
 {
   ACS37800_REGISTER_0F_t store;
-  ACS37800ERR error = readRegister(&store.data.all, ACS37800_REGISTER_EEPROM_0F); // Read register 0F
+  ACS37800ERR error = writeRegister(ACS37800_CUSTOMER_ACCESS_CODE, ACS37800_REGISTER_VOLATILE_2F); // Set the customer access code
+
+  if (error != ACS37800_SUCCESS)
+  {
+    if (_printDebug == true)
+    {
+      _debugPort->print(F("setI2Caddress: writeRegister (1) returned: "));
+      _debugPort->println(error);
+    }
+    return (error); // Bail
+  }
+
+  error = readRegister(&store.data.all, ACS37800_REGISTER_EEPROM_0F); // Read register 0F
 
   if (error != ACS37800_SUCCESS)
   {
@@ -142,44 +150,58 @@ ACS37800ERR ACS37800::setI2Caddress(uint8_t newAddress)
   {
     if (_printDebug == true)
     {
-      _debugPort->print(F("setI2Caddress: writeRegister returned: "));
+      _debugPort->print(F("setI2Caddress: writeRegister (2) returned: "));
       _debugPort->println(error);
     }
     return (error); // Bail
   }
 
-  error = readRegister(&store.data.all, ACS37800_REGISTER_EEPROM_0F); // Read register 0F
+  error = writeRegister(0, ACS37800_REGISTER_VOLATILE_2F); // Clear the customer access code
 
   if (error != ACS37800_SUCCESS)
   {
     if (_printDebug == true)
     {
-      _debugPort->print(F("setI2Caddress: readRegister (2) returned: "));
+      _debugPort->print(F("setI2Caddress: writeRegister (3) returned: "));
       _debugPort->println(error);
     }
     return (error); // Bail
   }
 
-  //Check the address was updated correctly
-  if ((store.data.bits.i2c_slv_addr == newAddress) && (store.data.bits.ECC == ACS37800_EEPROM_ECC_NO_ERROR))
-  {
-    return (ACS37800_SUCCESS);
-  }
-  else
-  {
-    if (_printDebug == true)
-    {
-      _debugPort->print(F("setI2Caddress: i2c_slv_addr is 0x"));
-      _debugPort->println(store.data.bits.i2c_slv_addr);
-      _debugPort->print(F("setI2Caddress: ECC is "));
-      _debugPort->println(store.data.bits.ECC);
-    }
-    return (ACS37800_ERR_REGISTER_READ_MODIFY_WRITE_FAILURE);
-  }
+  // We can't do this... Reading register 0F - after a successful write with a new address - returns zero...
+  // error = readRegister(&store.data.all, ACS37800_REGISTER_EEPROM_0F); // Read register 0F
+  //
+  // if (error != ACS37800_SUCCESS)
+  // {
+  //   if (_printDebug == true)
+  //   {
+  //     _debugPort->print(F("setI2Caddress: readRegister (2) returned: "));
+  //     _debugPort->println(error);
+  //   }
+  //   return (error); // Bail
+  // }
+  //
+  // if ((store.data.bits.i2c_slv_addr == newAddress) && (store.data.bits.ECC == ACS37800_EEPROM_ECC_NO_ERROR))
+  // {
+  //   return (ACS37800_SUCCESS);
+  // }
+  // else
+  // {
+  //   if (_printDebug == true)
+  //   {
+  //     _debugPort->print(F("setI2Caddress: i2c_slv_addr is 0x"));
+  //     _debugPort->println(store.data.bits.i2c_slv_addr, HEX);
+  //     _debugPort->print(F("setI2Caddress: ECC is "));
+  //     _debugPort->println(store.data.bits.ECC);
+  //   }
+  //   return (ACS37800_ERR_REGISTER_READ_MODIFY_WRITE_FAILURE);
+  // }
+
+  return (error);
 }
 
 //Set the coarse gain adjustment for the current channel
-//According to teh datasheet, the bit fields foe EEPROM (0B) and Shadow (1B) are different. Not sure why...?
+//According to the datasheet, the bit fields for EEPROM (0B) and Shadow (1B) are different. Not sure why...?
 ACS37800ERR ACS37800::setCurrentCoarseGain(ACS37800_CRS_SNS_e gain, boolean _eeprom)
 {
   ACS37800_REGISTER_1B_t store;
