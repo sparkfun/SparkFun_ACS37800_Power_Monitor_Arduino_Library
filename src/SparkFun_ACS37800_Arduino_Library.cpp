@@ -23,10 +23,11 @@ ACS37800::ACS37800()
 
 //Start I2C communication using the specified port
 //Returns true if successful or false if no sensor detected
-bool ACS37800::begin(uint8_t address, TwoWire &wirePort)
+bool ACS37800::begin(uint8_t address, TwoWire &wirePort, float currentSensingRange)
 {
   _ACS37800Address = address; //Grab which i2c address the user wants us to use
   _i2cPort = &wirePort; //Grab which port the user wants us to use
+  _currentSensingRange = currentSensingRange; // Define the current sensing range - usually 30.0 Amps but could be 90.0 Amps
 
   Wire.beginTransmission(address);
   if (Wire.endTransmission() != 0) // Did we detect something?
@@ -349,7 +350,9 @@ ACS37800ERR ACS37800::readInstantaneous(float *vInst, float *iInst)
     uint16_t unSigned;
   } signedUnsigned; // Avoid any ambiguity when casting to signed int
 
-  signedUnsigned.unSigned = store.data.bits.vcodes; //Extract vcodes as signed int
+  //Extract vcodes as signed int
+  //vcodes as actually int16_t but is stored in a uint32_t as a 16-bit bitfield
+  signedUnsigned.unSigned = store.data.bits.vcodes;
   float volts = (float)signedUnsigned.Signed;
   if (_printDebug == true)
   {
@@ -358,8 +361,8 @@ ACS37800ERR ACS37800::readInstantaneous(float *vInst, float *iInst)
     _debugPort->print(F("readInstantaneous: volts (mV, before correction) is "));
     _debugPort->println(volts);
   }
-  volts /= 32768.0; //Convert to +/- 1
-  volts /= 1.19; //Convert to mV
+  volts /= 27500.0; //Convert from codes to the fraction of full scale
+  volts *= 250; //Convert to mV
   volts /= 1000; //Convert to Volts
   //Correct for the voltage divider: (RISO1 + RISO2 +RSENSE) / RSENSE
   //Assumes RISO1/2 are both 1MOhm
@@ -383,8 +386,8 @@ ACS37800ERR ACS37800::readInstantaneous(float *vInst, float *iInst)
     _debugPort->print(F("readInstantaneous: amps (A, before correction) is "));
     _debugPort->println(amps);
   }
-  amps /= 32768.0; //Convert to +/- 1
-  amps /= 1.19; //Convert to Amps
+  amps /= 27500.0; //Convert from codes to the fraction of full scale
+  amps *= _currentSensingRange; //Convert to Amps
   if (_printDebug == true)
   {
     _debugPort->print(F("readInstantaneous: amps (A, after correction) is "));

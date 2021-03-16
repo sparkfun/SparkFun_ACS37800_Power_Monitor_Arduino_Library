@@ -42,7 +42,7 @@ void setup()
       if (address == NEW_ADDRESS) // Check if the address already matches NEW_ADDRESS
       {
         Serial.print(F("A device is already using address 0x"));
-        Serial.print(NEW_ADDRESS);
+        Serial.print(NEW_ADDRESS, HEX);
         Serial.println(F(". Freezing..."));
         while(1)
           ; // Do nothing more

@@ -390,7 +390,10 @@ class ACS37800
     ACS37800();
 
     //Start I2C communication using specified address and port
-    boolean begin(uint8_t address = ACS37800_DEFAULT_I2C_ADDRESS, TwoWire &wirePort = Wire); //If user doesn't specify then Wire will be used
+    //The user can also specify / override the ACS37800's current sensing range
+    //ACS37800KMACTR-030B3-I2C is a 30.0 Amp part - Default - as used on the SparkFun Qwiic Power Meter
+    //ACS37800KMACTR-090B3-I2C is a 90.0 Amp part
+    boolean begin(uint8_t address = ACS37800_DEFAULT_I2C_ADDRESS, TwoWire &wirePort = Wire, float currentSensingRange = 30.0); //If user doesn't specify then Wire will be used
 
     //Debugging
     void enableDebugging(Stream &debugPort = Serial); //Turn on debug printing. If user doesn't specify then Serial will be used.
@@ -429,6 +432,11 @@ class ACS37800
 
     //The value of the sense resistor for voltage measurement in Ohms
     int _senseResistance = ACS37800_DEFAULT_SENSE_RES;
+
+    //The ACS37800's current sensing range
+    //ACS37800KMACTR-030B3-I2C is a 30.0 Amp part - as used on the SparkFun Qwiic Power Meter
+    //ACS37800KMACTR-090B3-I2C is a 90.0 Amp part
+    float _currentSensingRange;
 
 };
 
