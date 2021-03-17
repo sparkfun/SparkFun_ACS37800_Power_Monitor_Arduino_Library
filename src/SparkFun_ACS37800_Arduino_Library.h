@@ -31,6 +31,14 @@ const uint32_t ACS37800_CUSTOMER_ACCESS_CODE = 0x4F70656E;
 //Default sense resistance for voltage measurement (Ohms)
 const int ACS37800_DEFAULT_SENSE_RES = 8200;
 
+//Default voltage-divider resistance for voltage measurement (Ohms)
+const int ACS37800_DEFAULT_DIVIDER_RES = 2000000;
+
+//Default current-sensing range
+//ACS37800KMACTR-030B3-I2C is a 30.0 Amp part - as used on the SparkFun Qwiic Power Meter
+//ACS37800KMACTR-090B3-I2C is a 90.0 Amp part
+const int ACS37800_DEFAULT_CURRENT_RANGE = 30;
+
 //Error result
 typedef enum {
   ACS37800_SUCCESS = 0,
@@ -167,24 +175,6 @@ typedef struct
     } bits;
   } data;
 } ACS37800_REGISTER_0F_t;
-
-//Shadow Registers : Bit Field definitions
-
-typedef struct
-{
-  union
-  {
-    uint32_t all;
-    struct
-    {
-      uint32_t qvo_fine : 9;
-      uint32_t sns_fine : 9;
-      uint32_t crs_sns : 3;
-      uint32_t iavgselen : 1;
-      //uint32_t pavgselen : 1; // Not present in shadow register?!
-    } bits;
-  } data;
-} ACS37800_REGISTER_1B_t;
 
 //Volatile Registers : Bit Field definitions
 
@@ -341,10 +331,12 @@ typedef enum
   ACS37800_CRS_SNS_3X,
   ACS37800_CRS_SNS_3POINT5X,
   ACS37800_CRS_SNS_4X,
-  ACS37800_CRS_SNS_4POINT5X,
+  ACS37800_CRS_SNS_4POINT5X, // This appears to be the default
   ACS37800_CRS_SNS_5POINT5X,
   ACS37800_CRS_SNS_8X
 } ACS37800_CRS_SNS_e; //Coarse gain for the current channel
+
+const float ACS37800_CRS_SNS_GAINS[8] = { 1.0, 2.0, 3.0, 3.5, 4.0, 4.5, 5.5, 8.0 };
 
 typedef enum
 {
@@ -393,7 +385,7 @@ class ACS37800
     //The user can also specify / override the ACS37800's current sensing range
     //ACS37800KMACTR-030B3-I2C is a 30.0 Amp part - Default - as used on the SparkFun Qwiic Power Meter
     //ACS37800KMACTR-090B3-I2C is a 90.0 Amp part
-    boolean begin(uint8_t address = ACS37800_DEFAULT_I2C_ADDRESS, TwoWire &wirePort = Wire, float currentSensingRange = 30.0); //If user doesn't specify then Wire will be used
+    boolean begin(uint8_t address = ACS37800_DEFAULT_I2C_ADDRESS, TwoWire &wirePort = Wire); //If user doesn't specify then Wire will be used
 
     //Debugging
     void enableDebugging(Stream &debugPort = Serial); //Turn on debug printing. If user doesn't specify then Serial will be used.
@@ -402,21 +394,35 @@ class ACS37800
     ACS37800ERR readRegister(uint32_t *data, uint8_t address);
     ACS37800ERR writeRegister(uint32_t data, uint8_t address);
 
-    //Configurable Settings
-    //By default, settings are written to the shadow registers only. Set _eeprom to true to write to EEPROM too.
-    ACS37800ERR setCurrentCoarseGain(ACS37800_CRS_SNS_e gain, boolean _eeprom = false);
-
     //Change the I2C address in EEPROM (i2c_slv_addr)
     //This also sets the i2c_dis_slv_addr flag so the DIO pins will no longer define the I2C address
     ACS37800ERR setI2Caddress(uint8_t newAddress);
 
+    //Configurable Settings
+    //By default, settings are written to the shadow registers only. Set _eeprom to true to write to EEPROM too.
+    //Set/Get the number of samples for RMS calculations. Bypass_N_Enable must be set/true for this to have effect.
+    ACS37800ERR setNumberOfSamples(uint32_t numberOfSamples, boolean _eeprom = false);
+    ACS37800ERR getNumberOfSamples(uint32_t *numberOfSamples); // Read and return the number of samples (from _shadow_ memory)
+    //Set/Clear the Bypass_N_Enable flag
+    ACS37800ERR setBypassNenable(boolean bypass, boolean _eeprom = false);
+    ACS37800ERR getBypassNenable(boolean *bypass); // Read and return the bypass_n_en flag (from _shadow_ memory)
+    //Adjust the coarse current gain
+    //Note: use with caution! You will also need to adjust the fine gain (sns_fine) too to maintain accuracy
+    ACS37800ERR setCurrentCoarseGain(ACS37800_CRS_SNS_e gain, boolean _eeprom = false);
+    ACS37800ERR getCurrentCoarseGain(float *currentCoarseGain); // Read and return the gain (from _shadow_ memory)
+    //Set/Clear the iavgselen flag
+    ACS37800ERR setIavgSelEn(boolean iavgselen, boolean _eeprom = false);
+    ACS37800ERR getIavgSelEn(boolean *iavgselen); // Read and return the iavgselen flag (from _shadow_ memory)
+
     //Basic methods for accessing the volatile registers
     ACS37800ERR readRMS(float *vRMS, float *iRMS); // Read volatile register 0x20. Return the vRMS and iRMS.
-    ACS37800ERR readInstantaneous(float *vInst, float *iInst); // Read volatile register 0x2A. Return the vInst and iInst.
+    ACS37800ERR readInstantaneous(float *vInst, float *iInst, float *pInst); // Read volatile registers 0x2A and 0x2C. Return the vInst, iInst and pInst.
     ACS37800ERR readErrorFlags(ACS37800_REGISTER_2D_t *errorFlags); // Read volatile register 0x2D. Return its contents in errorFlags.
 
-    //Change the value of the sense resistor
-    void setSensRes(int newRes); // Change the value of _senseResistance (Ohms)
+    //Change the parameters
+    void setSenseRes(int newRes); // Change the value of _senseResistance (Ohms)
+    void setDividerRes(int newRes); // Change the value of _dividerResistance (Ohms)
+    void setCurrentRange(int newCurrent); // Change the value of _currentSensingRange (Amps)
 
   private:
 
@@ -433,11 +439,14 @@ class ACS37800
     //The value of the sense resistor for voltage measurement in Ohms
     int _senseResistance = ACS37800_DEFAULT_SENSE_RES;
 
-    //The ACS37800's current sensing range
-    //ACS37800KMACTR-030B3-I2C is a 30.0 Amp part - as used on the SparkFun Qwiic Power Meter
-    //ACS37800KMACTR-090B3-I2C is a 90.0 Amp part
-    float _currentSensingRange;
+    //The value of the divider resistance for voltage measurement in Ohms
+    int _dividerResistance = ACS37800_DEFAULT_DIVIDER_RES;
 
+    //The ACS37800's current sensing range
+    int _currentSensingRange = ACS37800_DEFAULT_CURRENT_RANGE;
+
+    //The ACS37800's coarse current gain - needed by the current calculations
+    float _currentCoarseGain;
 };
 
 #endif

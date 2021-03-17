@@ -1,6 +1,7 @@
 SparkFun ACS37800 Power Monitor Arduino Library
 ===========================================================
- [![SparkX ACS37800 Power Meter (Qwiic) (SPX-17873)]()](https://www.sparkfun.com/products/17873)
+
+[![SparkX ACS37800 Power Meter (Qwiic) (SPX-17873)]()](https://www.sparkfun.com/products/17873)
 
 [*SparkX ACS37800 Power Meter (Qwiic) (SPX-17873)*](https://www.sparkfun.com/products/17873)
 

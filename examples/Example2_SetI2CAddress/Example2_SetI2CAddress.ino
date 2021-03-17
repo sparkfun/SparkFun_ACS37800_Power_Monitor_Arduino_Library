@@ -19,7 +19,7 @@ ACS37800 mySensor; //Create an object of the ACS37800 class
 void setup()
 {
   Serial.begin(115200);
-  Serial.println(F("ACS37800 Example"));
+  Serial.println(F("ACS37800 Example - Set I2C address"));
 
   emptySerial(); // Make sure the serial buffer is empty
 

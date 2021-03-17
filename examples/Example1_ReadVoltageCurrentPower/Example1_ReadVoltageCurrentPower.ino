@@ -30,37 +30,30 @@ void setup()
     while (1)
       ; // Do nothing more
   }
+
+  // From the ACS37800 datasheet:
+  // CONFIGURING THE DEVICE FOR DC APPLICATIONS : FIXED SETTING OF N
+  // Set bypass_n_en = 1. This setting disables the dynamic calculation of n based off voltage zero crossings
+  // and sets n to a fixed value, which is set using EERPOM field n
+  //
+  // Sample rate is 32kHz. Maximum number of samples is 1023 (0x3FF) (10-bit)
+  mySensor.setNumberOfSamples(1023, true); // Set the number of samples in shadow memory and eeprom
+  mySensor.setBypassNenable(true, true); // Enable bypass_n in shadow memory and eeprom
 }
 
 void loop()
 {
   float volts;
   float amps;
+  float watts;
 
-  mySensor.readInstantaneous(&volts, &amps); // Read the instantaneous voltage and current
-  Serial.print(F("vInst: "));
+  mySensor.readInstantaneous(&volts, &amps, &watts); // Read the instantaneous voltage, current and power
+  Serial.print(F("Volts: "));
   Serial.print(volts, 2);
-  Serial.print(F(" iInst: "));
+  Serial.print(F(" Amps: "));
   Serial.print(amps, 2);
-
-  mySensor.readRMS(&volts, &amps); // Read the RMS voltage and current
-  Serial.print(F(" vRMS: "));
-  Serial.print(volts, 2);
-  Serial.print(F(" iRMS: "));
-  Serial.print(amps, 2);
-
-  ACS37800_REGISTER_2D_t errorFlags;
-  mySensor.readErrorFlags(&errorFlags); // Read the error flags
-  Serial.print(F(" vzerocrossout: "));
-  Serial.print(errorFlags.data.bits.vzerocrossout);
-  Serial.print(F(" faultout: "));
-  Serial.print(errorFlags.data.bits.faultout);
-  Serial.print(F(" faultlatched: "));
-  Serial.print(errorFlags.data.bits.faultlatched);
-  Serial.print(F(" overvoltage: "));
-  Serial.print(errorFlags.data.bits.overvoltage);
-  Serial.print(F(" undervoltage: "));
-  Serial.println(errorFlags.data.bits.undervoltage);
+  Serial.print(F(" Watts: "));
+  Serial.println(watts, 2);
 
   delay(1000);
 }
