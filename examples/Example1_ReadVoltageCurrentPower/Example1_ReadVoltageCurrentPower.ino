@@ -26,7 +26,7 @@ void setup()
   //Initialize sensor using default I2C address
   if (mySensor.begin() == false)
   {
-    Serial.print(F("ACS37800 not detected. Check connections. Freezing..."));
+    Serial.print(F("ACS37800 not detected. Check connections and I2C address. Freezing..."));
     while (1)
       ; // Do nothing more
   }
@@ -55,5 +55,5 @@ void loop()
   Serial.print(F(" Watts: "));
   Serial.println(watts, 2);
 
-  delay(1000);
+  delay(250);
 }

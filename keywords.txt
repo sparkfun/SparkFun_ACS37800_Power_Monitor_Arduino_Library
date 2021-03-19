@@ -38,10 +38,7 @@ setNumberOfSamples	KEYWORD2
 getNumberOfSamples	KEYWORD2
 setBypassNenable	KEYWORD2
 getBypassNenable	KEYWORD2
-setCurrentCoarseGain	KEYWORD2
 getCurrentCoarseGain	KEYWORD2
-setIavgSelEn	KEYWORD2
-getIavgSelEn	KEYWORD2
 readRMS	KEYWORD2
 readInstantaneous	KEYWORD2
 readErrorFlags	KEYWORD2

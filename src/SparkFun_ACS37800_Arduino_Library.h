@@ -406,13 +406,8 @@ class ACS37800
     //Set/Clear the Bypass_N_Enable flag
     ACS37800ERR setBypassNenable(boolean bypass, boolean _eeprom = false);
     ACS37800ERR getBypassNenable(boolean *bypass); // Read and return the bypass_n_en flag (from _shadow_ memory)
-    //Adjust the coarse current gain
-    //Note: use with caution! You will also need to adjust the fine gain (sns_fine) too to maintain accuracy
-    ACS37800ERR setCurrentCoarseGain(ACS37800_CRS_SNS_e gain, boolean _eeprom = false);
-    ACS37800ERR getCurrentCoarseGain(float *currentCoarseGain); // Read and return the gain (from _shadow_ memory)
-    //Set/Clear the iavgselen flag
-    ACS37800ERR setIavgSelEn(boolean iavgselen, boolean _eeprom = false);
-    ACS37800ERR getIavgSelEn(boolean *iavgselen); // Read and return the iavgselen flag (from _shadow_ memory)
+    // Read and return the gain (from _shadow_ memory)
+    ACS37800ERR getCurrentCoarseGain(float *currentCoarseGain);
 
     //Basic methods for accessing the volatile registers
     ACS37800ERR readRMS(float *vRMS, float *iRMS); // Read volatile register 0x20. Return the vRMS and iRMS.
