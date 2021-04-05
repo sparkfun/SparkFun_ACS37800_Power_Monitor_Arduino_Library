@@ -552,7 +552,7 @@ ACS37800ERR ACS37800::readRMS(float *vRMS, float *iRMS)
   volts /= 1000; //Convert to Volts
   //Correct for the voltage divider: (RISO1 + RISO2 + RSENSE) / RSENSE
   //Or:  (RISO1 + RISO2 + RISO3 + RISO4 + RSENSE) / RSENSE
-  float resistorMultiplier = (((float)_dividerResistance) + ((float)_senseResistance)) / ((float)_senseResistance);
+  float resistorMultiplier = (_dividerResistance + _senseResistance) / _senseResistance;
   volts *= resistorMultiplier;
   if (_printDebug == true)
   {
@@ -631,7 +631,7 @@ ACS37800ERR ACS37800::readInstantaneous(float *vInst, float *iInst, float *pInst
   volts /= 1000; //Convert to Volts
   //Correct for the voltage divider: (RISO1 + RISO2 + RSENSE) / RSENSE
   //Or:  (RISO1 + RISO2 + RISO3 + RISO4 + RSENSE) / RSENSE
-  float resistorMultiplier = (((float)_dividerResistance) + ((float)_senseResistance)) / ((float)_senseResistance);
+  float resistorMultiplier = (_dividerResistance + _senseResistance) / _senseResistance;
   volts *= resistorMultiplier;
   if (_printDebug == true)
   {
@@ -686,7 +686,7 @@ ACS37800ERR ACS37800::readInstantaneous(float *vInst, float *iInst, float *pInst
   }
   //Datasheet says: 3.08 LSB/mW for the 30A version and 1.03 LSB/mW for the 90A version
   float LSBpermW = 3.08; // LSB per mW
-  LSBpermW *= 30.0 / ((float)_currentSensingRange); // Correct for sensor version
+  LSBpermW *= 30.0 / _currentSensingRange; // Correct for sensor version
   power /= LSBpermW; //Convert from codes to mW
   //Correct for the voltage divider: (RISO1 + RISO2 + RSENSE) / RSENSE
   //Or:  (RISO1 + RISO2 + RISO3 + RISO4 + RSENSE) / RSENSE
@@ -720,13 +720,13 @@ ACS37800ERR ACS37800::readErrorFlags(ACS37800_REGISTER_2D_t *errorFlags)
 }
 
 //Change the value of the sense resistor (Ohms)
-void ACS37800::setSenseRes(int newRes)
+void ACS37800::setSenseRes(float newRes)
 {
   _senseResistance = newRes;
 }
 
 //Change the value of the voltage divider resistance (Ohms)
-void ACS37800::setDividerRes(int newRes)
+void ACS37800::setDividerRes(float newRes)
 {
   _dividerResistance = newRes;
 }
@@ -734,7 +734,7 @@ void ACS37800::setDividerRes(int newRes)
 //Change the current-sensing range (Amps)
 //ACS37800KMACTR-030B3-I2C is a 30.0 Amp part - as used on the SparkFun Qwiic Power Meter
 //ACS37800KMACTR-090B3-I2C is a 90.0 Amp part
-void ACS37800::setCurrentRange(int newCurrent)
+void ACS37800::setCurrentRange(float newCurrent)
 {
   _currentSensingRange = newCurrent;
 }

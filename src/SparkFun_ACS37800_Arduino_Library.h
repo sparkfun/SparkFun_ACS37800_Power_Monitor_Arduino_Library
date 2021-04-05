@@ -29,15 +29,15 @@ const uint8_t ACS37800_DEFAULT_I2C_ADDRESS = 0x60;
 const uint32_t ACS37800_CUSTOMER_ACCESS_CODE = 0x4F70656E;
 
 //Default sense resistance for voltage measurement (Ohms)
-const int ACS37800_DEFAULT_SENSE_RES = 8200;
+const float ACS37800_DEFAULT_SENSE_RES = 8200;
 
 //Default voltage-divider resistance for voltage measurement (Ohms)
-const int ACS37800_DEFAULT_DIVIDER_RES = 2000000;
+const float ACS37800_DEFAULT_DIVIDER_RES = 2000000;
 
 //Default current-sensing range
 //ACS37800KMACTR-030B3-I2C is a 30.0 Amp part - as used on the SparkFun Qwiic Power Meter
 //ACS37800KMACTR-090B3-I2C is a 90.0 Amp part
-const int ACS37800_DEFAULT_CURRENT_RANGE = 30;
+const float ACS37800_DEFAULT_CURRENT_RANGE = 30;
 
 //Error result
 typedef enum {
@@ -415,9 +415,9 @@ class ACS37800
     ACS37800ERR readErrorFlags(ACS37800_REGISTER_2D_t *errorFlags); // Read volatile register 0x2D. Return its contents in errorFlags.
 
     //Change the parameters
-    void setSenseRes(int newRes); // Change the value of _senseResistance (Ohms)
-    void setDividerRes(int newRes); // Change the value of _dividerResistance (Ohms)
-    void setCurrentRange(int newCurrent); // Change the value of _currentSensingRange (Amps)
+    void setSenseRes(float newRes); // Change the value of _senseResistance (Ohms)
+    void setDividerRes(float newRes); // Change the value of _dividerResistance (Ohms)
+    void setCurrentRange(float newCurrent); // Change the value of _currentSensingRange (Amps)
 
   private:
 
@@ -432,13 +432,13 @@ class ACS37800
     uint8_t _ACS37800Address = ACS37800_DEFAULT_I2C_ADDRESS;
 
     //The value of the sense resistor for voltage measurement in Ohms
-    int _senseResistance = ACS37800_DEFAULT_SENSE_RES;
+    float _senseResistance = ACS37800_DEFAULT_SENSE_RES;
 
     //The value of the divider resistance for voltage measurement in Ohms
-    int _dividerResistance = ACS37800_DEFAULT_DIVIDER_RES;
+    float _dividerResistance = ACS37800_DEFAULT_DIVIDER_RES;
 
     //The ACS37800's current sensing range
-    int _currentSensingRange = ACS37800_DEFAULT_CURRENT_RANGE;
+    float _currentSensingRange = ACS37800_DEFAULT_CURRENT_RANGE;
 
     //The ACS37800's coarse current gain - needed by the current calculations
     float _currentCoarseGain;
