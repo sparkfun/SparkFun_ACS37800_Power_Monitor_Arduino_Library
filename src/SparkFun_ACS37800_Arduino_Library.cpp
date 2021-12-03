@@ -563,7 +563,6 @@ ACS37800ERR ACS37800::readRMS(float *vRMS, float *iRMS)
 
   //Extract the irms. Convert to current in Amps.
   //Datasheet says: "RMS current output. This field is a signed 16-bit fixed point number with 15 fractional bits"
-  //Extract the vcodes. Convert to voltage in Volts.
   union
   {
     int16_t Signed;
@@ -581,7 +580,6 @@ ACS37800ERR ACS37800::readRMS(float *vRMS, float *iRMS)
   }
   amps /= 27500.0; //Convert from codes to the fraction of ADC Full Scale (15-bit)
   amps *= _currentSensingRange; //Convert to Amps
-  amps /= _currentCoarseGain / 4.5; // Correct for the coarse gain
   if (_printDebug == true)
   {
     _debugPort->print(F("readRMS: amps (A, after correction) is "));
@@ -652,7 +650,6 @@ ACS37800ERR ACS37800::readInstantaneous(float *vInst, float *iInst, float *pInst
   }
   amps /= 27500.0; //Convert from codes to the fraction of ADC Full Scale
   amps *= _currentSensingRange; //Convert to Amps
-  amps /= _currentCoarseGain / 4.5; // Correct for the coarse gain
   if (_printDebug == true)
   {
     _debugPort->print(F("readInstantaneous: amps (A, after correction) is "));
