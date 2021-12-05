@@ -578,7 +578,7 @@ ACS37800ERR ACS37800::readRMS(float *vRMS, float *iRMS)
     _debugPort->print(F("readRMS: amps (A, before correction) is "));
     _debugPort->println(amps);
   }
-  amps /= 27500.0; //Convert from codes to the fraction of ADC Full Scale (15-bit)
+  amps /= 55000.0; //Convert from codes to the fraction of ADC Full Scale (16-bit)
   amps *= _currentSensingRange; //Convert to Amps
   if (_printDebug == true)
   {
