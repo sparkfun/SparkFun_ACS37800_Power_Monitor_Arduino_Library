@@ -35,7 +35,7 @@ void setup()
   // CONFIGURING THE DEVICE FOR AC APPLICATIONS : DYNAMIC CALCULATION OF N
   // Set bypass_n_en = 0 (default). This setting enables the device to
   // dynamically calculate N based off the voltage zero crossings.
-  mySensor.setBypassNenable(false, false); // Disable bypass_n in shadow memory and eeprom
+  mySensor.setBypassNenable(false, true); // Disable bypass_n in shadow memory and eeprom
 
   // We need to connect the LO pin to the 'low' side of the AC source.
   // So we need to set the divider resistance to 4M Ohms (instead of 2M).
