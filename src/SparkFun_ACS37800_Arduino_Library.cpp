@@ -590,6 +590,98 @@ ACS37800ERR ACS37800::readRMS(float *vRMS, float *iRMS)
   return (error);
 }
 
+// Read volatile register 0x21. Return the pactive and pimag.
+ACS37800ERR ACS37800::readRMSActiveReactive(float *pActive, float *pReactive)
+{
+  ACS37800_REGISTER_21_t store;
+  ACS37800ERR error = readRegister(&store.data.all, ACS37800_REGISTER_VOLATILE_21); // Read register 21
+
+  if (error != ACS37800_SUCCESS)
+  {
+    if (_printDebug == true)
+    {
+      _debugPort->print(F("readRMSActiveReactive: readRegister (21) returned: "));
+      _debugPort->println(error);
+    }
+    return (error); // Bail
+  }
+
+  // Extract pactive. Convert to Watts
+  // Note: datasheet says:
+  // "Active power output. This field is a signed 16-bit fixed point
+  //  number with 15 fractional bits, where positive MaxPow = 0.704,
+  //  and negative MaxPow = –0.704. To convert the value (input
+  //  power) to line power, divide the input power by the RSENSE and
+  //  RISO voltage divider ratio using actual resistor values."
+  // Datasheet also says:
+  //  "3.08 LSB/mW for the 30A version and 1.03 LSB/mW for the 90A version"
+
+  union
+  {
+    int16_t Signed;
+    uint16_t unSigned;
+  } signedUnsigned; // Avoid any ambiguity when casting to signed int
+
+  signedUnsigned.unSigned = store.data.bits.pactive;
+
+  float power = (float)signedUnsigned.Signed;
+  if (_printDebug == true)
+  {
+    _debugPort->print(F("readRMSActiveReactive: pactive: 0x"));
+    _debugPort->println(signedUnsigned.unSigned, HEX);
+    _debugPort->print(F("readRMSActiveReactive: pactive (mW, before correction) is "));
+    _debugPort->println(power);
+  }
+  float LSBpermW = 3.08; // LSB per mW
+  LSBpermW *= 30.0 / _currentSensingRange; // Correct for sensor version
+  power /= LSBpermW; //Convert from codes to mW
+  //Correct for the voltage divider: (RISO1 + RISO2 + RSENSE) / RSENSE
+  //Or:  (RISO1 + RISO2 + RISO3 + RISO4 + RSENSE) / RSENSE
+  float resistorMultiplier = (_dividerResistance + _senseResistance) / _senseResistance;
+  power *= resistorMultiplier;
+  power /= 1000; // Convert from mW to W
+  if (_printDebug == true)
+  {
+    _debugPort->print(F("readRMSActiveReactive: pactive (W, after correction) is "));
+    _debugPort->println(power);
+  }
+  *pActive = power;
+
+  // Extract pimag. Convert to Watts
+  // Note: datasheet says:
+  // "Reactive power output. This field is an unsigned 16-bit fixed
+  //  point number with 16 fractional bits, where MaxPow = 0.704. To
+  //  convert the value (input power) to line power, divide the input
+  //  power by the RSENSE and RISO voltage divider ratio using actual
+  //  resistor values."
+  // Datasheet also says:
+  //  "3.08 LSB/mW for the 30A version and 1.03 LSB/mW for the 90A version"
+
+  signedUnsigned.unSigned = store.data.bits.pimag;
+
+  power = (float)signedUnsigned.Signed;
+  if (_printDebug == true)
+  {
+    _debugPort->print(F("readRMSActiveReactive: pimag: 0x"));
+    _debugPort->println(signedUnsigned.unSigned, HEX);
+    _debugPort->print(F("readRMSActiveReactive: pimag (mW, before correction) is "));
+    _debugPort->println(power);
+  }
+  power /= LSBpermW; //Convert from codes to mW
+  //Correct for the voltage divider: (RISO1 + RISO2 + RSENSE) / RSENSE
+  //Or:  (RISO1 + RISO2 + RISO3 + RISO4 + RSENSE) / RSENSE
+  power *= resistorMultiplier;
+  power /= 1000; // Convert from mW to W
+  if (_printDebug == true)
+  {
+    _debugPort->print(F("readRMSActiveReactive: pimag (W, after correction) is "));
+    _debugPort->println(power);
+  }
+  *pReactive = power;
+
+  return (error);
+}
+
 // Read volatile registers 0x2A and 0x2C. Return the vInst (Volts), iInst (Amps) and pInst (VAR).
 ACS37800ERR ACS37800::readInstantaneous(float *vInst, float *iInst, float *pInst)
 {

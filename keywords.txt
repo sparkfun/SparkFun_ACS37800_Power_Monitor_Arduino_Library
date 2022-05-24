@@ -40,6 +40,7 @@ setBypassNenable	KEYWORD2
 getBypassNenable	KEYWORD2
 getCurrentCoarseGain	KEYWORD2
 readRMS	KEYWORD2
+readRMSActiveReactive	KEYWORD2
 readInstantaneous	KEYWORD2
 readErrorFlags	KEYWORD2
 setSenseRes	KEYWORD2
