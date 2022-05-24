@@ -539,12 +539,13 @@ ACS37800ERR ACS37800::readRMS(float *vRMS, float *iRMS)
 
   //Extract vrms. Convert to voltage in Volts.
   // Note: datasheet says "RMS voltage output. This field is an unsigned 16-bit fixed point number with 16 fractional bits"
+  // Datasheet also says "Voltage Channel ADC Sensitivity: 110 LSB/mV"
   float volts = (float)store.data.bits.vrms;
   if (_printDebug == true)
   {
     _debugPort->print(F("readRMS: vrms: 0x"));
     _debugPort->println(store.data.bits.vrms, HEX);
-    _debugPort->print(F("readRMS: volts (mV, before correction) is "));
+    _debugPort->print(F("readRMS: volts (LSB, before correction) is "));
     _debugPort->println(volts);
   }
   volts /= 55000.0; //Convert from codes to the fraction of ADC Full Scale (16-bit)
@@ -575,7 +576,7 @@ ACS37800ERR ACS37800::readRMS(float *vRMS, float *iRMS)
   {
     _debugPort->print(F("readRMS: irms: 0x"));
     _debugPort->println(store.data.bits.irms, HEX);
-    _debugPort->print(F("readRMS: amps (A, before correction) is "));
+    _debugPort->print(F("readRMS: amps (LSB, before correction) is "));
     _debugPort->println(amps);
   }
   amps /= 55000.0; //Convert from codes to the fraction of ADC Full Scale (16-bit)
@@ -629,7 +630,7 @@ ACS37800ERR ACS37800::readRMSActiveReactive(float *pActive, float *pReactive)
   {
     _debugPort->print(F("readRMSActiveReactive: pactive: 0x"));
     _debugPort->println(signedUnsigned.unSigned, HEX);
-    _debugPort->print(F("readRMSActiveReactive: pactive (mW, before correction) is "));
+    _debugPort->print(F("readRMSActiveReactive: pactive (LSB, before correction) is "));
     _debugPort->println(power);
   }
   float LSBpermW = 3.08; // LSB per mW
@@ -655,26 +656,26 @@ ACS37800ERR ACS37800::readRMSActiveReactive(float *pActive, float *pReactive)
   //  power by the RSENSE and RISO voltage divider ratio using actual
   //  resistor values."
   // Datasheet also says:
-  //  "3.08 LSB/mW for the 30A version and 1.03 LSB/mW for the 90A version"
+  //  "6.15 LSB/mVAR for the 30A version and 2.05 LSB/mVAR for the 90A version"
 
-  signedUnsigned.unSigned = store.data.bits.pimag;
-
-  power = (float)signedUnsigned.Signed;
+  power = (float)store.data.bits.pimag;
   if (_printDebug == true)
   {
     _debugPort->print(F("readRMSActiveReactive: pimag: 0x"));
-    _debugPort->println(signedUnsigned.unSigned, HEX);
-    _debugPort->print(F("readRMSActiveReactive: pimag (mW, before correction) is "));
+    _debugPort->println(store.data.bits.pimag, HEX);
+    _debugPort->print(F("readRMSActiveReactive: pimag (LSB, before correction) is "));
     _debugPort->println(power);
   }
-  power /= LSBpermW; //Convert from codes to mW
+  float LSBpermVAR = 6.15; // LSB per mVAR
+  LSBpermVAR *= 30.0 / _currentSensingRange; // Correct for sensor version
+  power /= LSBpermVAR; //Convert from codes to mVAR
   //Correct for the voltage divider: (RISO1 + RISO2 + RSENSE) / RSENSE
   //Or:  (RISO1 + RISO2 + RISO3 + RISO4 + RSENSE) / RSENSE
   power *= resistorMultiplier;
-  power /= 1000; // Convert from mW to W
+  power /= 1000; // Convert from mVAR to VAR
   if (_printDebug == true)
   {
-    _debugPort->print(F("readRMSActiveReactive: pimag (W, after correction) is "));
+    _debugPort->print(F("readRMSActiveReactive: pimag (VAR, after correction) is "));
     _debugPort->println(power);
   }
   *pReactive = power;
@@ -713,9 +714,10 @@ ACS37800ERR ACS37800::readInstantaneous(float *vInst, float *iInst, float *pInst
   {
     _debugPort->print(F("readInstantaneous: vcodes: 0x"));
     _debugPort->println(signedUnsigned.unSigned, HEX);
-    _debugPort->print(F("readInstantaneous: volts (mV, before correction) is "));
+    _debugPort->print(F("readInstantaneous: volts (LSB, before correction) is "));
     _debugPort->println(volts);
   }
+  // Datasheet says "Voltage Channel ADC Sensitivity: 110 LSB/mV"
   volts /= 27500.0; //Convert from codes to the fraction of ADC Full Scale
   volts *= 250; //Convert to mV (Differential Input Range is +/- 250mV)
   volts /= 1000; //Convert to Volts
@@ -737,7 +739,7 @@ ACS37800ERR ACS37800::readInstantaneous(float *vInst, float *iInst, float *pInst
   {
     _debugPort->print(F("readInstantaneous: icodes: 0x"));
     _debugPort->println(signedUnsigned.unSigned, HEX);
-    _debugPort->print(F("readInstantaneous: amps (A, before correction) is "));
+    _debugPort->print(F("readInstantaneous: amps (LSB, before correction) is "));
     _debugPort->println(amps);
   }
   amps /= 27500.0; //Convert from codes to the fraction of ADC Full Scale
@@ -770,7 +772,7 @@ ACS37800ERR ACS37800::readInstantaneous(float *vInst, float *iInst, float *pInst
   {
     _debugPort->print(F("readInstantaneous: pinstant: 0x"));
     _debugPort->println(signedUnsigned.unSigned, HEX);
-    _debugPort->print(F("readInstantaneous: power (mW, before correction) is "));
+    _debugPort->print(F("readInstantaneous: power (LSB, before correction) is "));
     _debugPort->println(power);
   }
   //Datasheet says: 3.08 LSB/mW for the 30A version and 1.03 LSB/mW for the 90A version
