@@ -411,7 +411,8 @@ class ACS37800
 
     //Basic methods for accessing the volatile registers
     ACS37800ERR readRMS(float *vRMS, float *iRMS); // Read volatile register 0x20. Return the vRMS and iRMS.
-    ACS37800ERR readRMSActiveReactive(float *pActive, float *pReactive); // Read volatile register 0x21. Return the pactive and pimag (reactive)
+    ACS37800ERR readPowerActiveReactive(float *pActive, float *pReactive); // Read volatile register 0x21. Return the pactive and pimag (reactive)
+    ACS37800ERR readPowerFactor(float *pApparent, float *pFactor, bool *posangle, bool *pospf); // Read volatile register 0x22. Return the apparent power, power factor, leading / lagging, generated / consumed
     ACS37800ERR readInstantaneous(float *vInst, float *iInst, float *pInst); // Read volatile registers 0x2A and 0x2C. Return the vInst, iInst and pInst.
     ACS37800ERR readErrorFlags(ACS37800_REGISTER_2D_t *errorFlags); // Read volatile register 0x2D. Return its contents in errorFlags.
 

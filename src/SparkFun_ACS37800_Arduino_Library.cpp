@@ -592,7 +592,7 @@ ACS37800ERR ACS37800::readRMS(float *vRMS, float *iRMS)
 }
 
 // Read volatile register 0x21. Return the pactive and pimag.
-ACS37800ERR ACS37800::readRMSActiveReactive(float *pActive, float *pReactive)
+ACS37800ERR ACS37800::readPowerActiveReactive(float *pActive, float *pReactive)
 {
   ACS37800_REGISTER_21_t store;
   ACS37800ERR error = readRegister(&store.data.all, ACS37800_REGISTER_VOLATILE_21); // Read register 21
@@ -601,7 +601,7 @@ ACS37800ERR ACS37800::readRMSActiveReactive(float *pActive, float *pReactive)
   {
     if (_printDebug == true)
     {
-      _debugPort->print(F("readRMSActiveReactive: readRegister (21) returned: "));
+      _debugPort->print(F("readPowerActiveReactive: readRegister (21) returned: "));
       _debugPort->println(error);
     }
     return (error); // Bail
@@ -628,9 +628,9 @@ ACS37800ERR ACS37800::readRMSActiveReactive(float *pActive, float *pReactive)
   float power = (float)signedUnsigned.Signed;
   if (_printDebug == true)
   {
-    _debugPort->print(F("readRMSActiveReactive: pactive: 0x"));
+    _debugPort->print(F("readPowerActiveReactive: pactive: 0x"));
     _debugPort->println(signedUnsigned.unSigned, HEX);
-    _debugPort->print(F("readRMSActiveReactive: pactive (LSB, before correction) is "));
+    _debugPort->print(F("readPowerActiveReactive: pactive (LSB, before correction) is "));
     _debugPort->println(power);
   }
   float LSBpermW = 3.08; // LSB per mW
@@ -643,12 +643,12 @@ ACS37800ERR ACS37800::readRMSActiveReactive(float *pActive, float *pReactive)
   power /= 1000; // Convert from mW to W
   if (_printDebug == true)
   {
-    _debugPort->print(F("readRMSActiveReactive: pactive (W, after correction) is "));
+    _debugPort->print(F("readPowerActiveReactive: pactive (W, after correction) is "));
     _debugPort->println(power);
   }
   *pActive = power;
 
-  // Extract pimag. Convert to Watts
+  // Extract pimag. Convert to VAR
   // Note: datasheet says:
   // "Reactive power output. This field is an unsigned 16-bit fixed
   //  point number with 16 fractional bits, where MaxPow = 0.704. To
@@ -661,9 +661,9 @@ ACS37800ERR ACS37800::readRMSActiveReactive(float *pActive, float *pReactive)
   power = (float)store.data.bits.pimag;
   if (_printDebug == true)
   {
-    _debugPort->print(F("readRMSActiveReactive: pimag: 0x"));
+    _debugPort->print(F("readPowerActiveReactive: pimag: 0x"));
     _debugPort->println(store.data.bits.pimag, HEX);
-    _debugPort->print(F("readRMSActiveReactive: pimag (LSB, before correction) is "));
+    _debugPort->print(F("readPowerActiveReactive: pimag (LSB, before correction) is "));
     _debugPort->println(power);
   }
   float LSBpermVAR = 6.15; // LSB per mVAR
@@ -675,10 +675,90 @@ ACS37800ERR ACS37800::readRMSActiveReactive(float *pActive, float *pReactive)
   power /= 1000; // Convert from mVAR to VAR
   if (_printDebug == true)
   {
-    _debugPort->print(F("readRMSActiveReactive: pimag (VAR, after correction) is "));
+    _debugPort->print(F("readPowerActiveReactive: pimag (VAR, after correction) is "));
     _debugPort->println(power);
   }
   *pReactive = power;
+
+  return (error);
+}
+
+// Read volatile register 0x22. Return the apparent power, power factor, leading / lagging, generated / consumed
+ACS37800ERR ACS37800::readPowerFactor(float *pApparent, float *pFactor, bool *posangle, bool *pospf)
+{
+  ACS37800_REGISTER_22_t store;
+  ACS37800ERR error = readRegister(&store.data.all, ACS37800_REGISTER_VOLATILE_22); // Read register 22
+
+  if (error != ACS37800_SUCCESS)
+  {
+    if (_printDebug == true)
+    {
+      _debugPort->print(F("readPowerFactor: readRegister (22) returned: "));
+      _debugPort->println(error);
+    }
+    return (error); // Bail
+  }
+
+  // Extract papparent. Convert to VA
+  // Note: datasheet says:
+  // "Apparent power output magnitude. This field is an unsigned
+  //  16-bit fixed point number with 16 fractional bits, where MaxPow
+  //  = 0.704. To convert the value (input power) to line power, divide
+  //  the input power by the RSENSE and RISO voltage divider ratio
+  //  using actual resistor values."
+  // Datasheet also says:
+  //  "6.15 LSB/mVA for the 30A version and 2.05 LSB/mVA for the 90A version"
+
+  float power = (float)store.data.bits.papparent;
+  if (_printDebug == true)
+  {
+    _debugPort->print(F("readPowerFactor: papparent: 0x"));
+    _debugPort->println(store.data.bits.papparent, HEX);
+    _debugPort->print(F("readPowerFactor: papparent (LSB, before correction) is "));
+    _debugPort->println(power);
+  }
+  float LSBpermVA = 6.15; // LSB per mVA
+  LSBpermVA *= 30.0 / _currentSensingRange; // Correct for sensor version
+  power /= LSBpermVA; //Convert from codes to mVA
+  //Correct for the voltage divider: (RISO1 + RISO2 + RSENSE) / RSENSE
+  //Or:  (RISO1 + RISO2 + RISO3 + RISO4 + RSENSE) / RSENSE
+  float resistorMultiplier = (_dividerResistance + _senseResistance) / _senseResistance;
+  power *= resistorMultiplier;
+  power /= 1000; // Convert from mVAR to VAR
+  if (_printDebug == true)
+  {
+    _debugPort->print(F("readPowerFactor: papparent (VA, after correction) is "));
+    _debugPort->println(power);
+  }
+  *pApparent = power;
+
+  // Extract power factor
+  // Datasheet says:
+  // "Power factor output. This field is a signed 11-bit fixed point number
+  //  with 10 fractional bits. It ranges from –1 to ~1 with a step
+  //  size of 2^-10."
+
+  union
+  {
+    int16_t Signed;
+    uint16_t unSigned;
+  } signedUnsigned; // Avoid any ambiguity when casting to signed int
+
+  signedUnsigned.unSigned = store.data.bits.pfactor << 5; // Move 11-bit number into 16-bits (signed)
+
+  float pfactor = (float)signedUnsigned.Signed / 32768.0; // Convert to +/- 1
+  if (_printDebug == true)
+  {
+    _debugPort->print(F("readPowerFactor: pfactor: 0x"));
+    _debugPort->println(store.data.bits.pfactor, HEX);
+    _debugPort->print(F("readPowerFactor: pfactor is "));
+    _debugPort->println(pfactor);
+  }
+  *pFactor = pfactor;
+
+  // Extract posangle and pospf
+  *posangle = store.data.bits.posangle & 0x1;
+  *pospf = store.data.bits.pospf & 0x1;
 
   return (error);
 }
