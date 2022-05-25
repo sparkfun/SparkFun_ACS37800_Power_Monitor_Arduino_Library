@@ -53,5 +53,33 @@ void loop()
   Serial.print(F(" Amps: "));
   Serial.println(amps, 2);
 
+  float pactive = 0.0;
+  float preactive = 0.0;
+  
+  mySensor.readPowerActiveReactive(&pactive, &preactive); // Read the active and reactive power
+  Serial.print(F("Power: Active (W): "));
+  Serial.print(pactive, 2);
+  Serial.print(F(" Reactive (VAR): "));
+  Serial.println(preactive, 2);
+  
+  float papparent = 0.0;
+  float pfactor = 0.0;
+  bool posangle = 0;
+  bool pospf = 0;
+  
+  mySensor.readPowerFactor(&papparent, &pfactor, &posangle, &pospf); // Read the apparent power and the power factor
+  Serial.print(F("Power: Apparent (VA): "));
+  Serial.print(papparent, 2);
+  Serial.print(F(" Power Factor: "));
+  Serial.print(pfactor, 2);
+  if (posangle)
+    Serial.print(F(" Lagging"));
+  else
+    Serial.print(F(" Leading"));
+  if (pospf)
+    Serial.println(F(" Consumed"));
+  else
+    Serial.println(F(" Generated"));
+  
   delay(250);
 }

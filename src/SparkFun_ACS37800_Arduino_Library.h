@@ -385,7 +385,7 @@ class ACS37800
     //The user can also specify / override the ACS37800's current sensing range
     //ACS37800KMACTR-030B3-I2C is a 30.0 Amp part - Default - as used on the SparkFun Qwiic Power Meter
     //ACS37800KMACTR-090B3-I2C is a 90.0 Amp part
-    boolean begin(uint8_t address = ACS37800_DEFAULT_I2C_ADDRESS, TwoWire &wirePort = Wire); //If user doesn't specify then Wire will be used
+    bool begin(uint8_t address = ACS37800_DEFAULT_I2C_ADDRESS, TwoWire &wirePort = Wire); //If user doesn't specify then Wire will be used
 
     //Debugging
     void enableDebugging(Stream &debugPort = Serial); //Turn on debug printing. If user doesn't specify then Serial will be used.
@@ -401,16 +401,18 @@ class ACS37800
     //Configurable Settings
     //By default, settings are written to the shadow registers only. Set _eeprom to true to write to EEPROM too.
     //Set/Get the number of samples for RMS calculations. Bypass_N_Enable must be set/true for this to have effect.
-    ACS37800ERR setNumberOfSamples(uint32_t numberOfSamples, boolean _eeprom = false);
+    ACS37800ERR setNumberOfSamples(uint32_t numberOfSamples, bool _eeprom = false);
     ACS37800ERR getNumberOfSamples(uint32_t *numberOfSamples); // Read and return the number of samples (from _shadow_ memory)
     //Set/Clear the Bypass_N_Enable flag
-    ACS37800ERR setBypassNenable(boolean bypass, boolean _eeprom = false);
-    ACS37800ERR getBypassNenable(boolean *bypass); // Read and return the bypass_n_en flag (from _shadow_ memory)
+    ACS37800ERR setBypassNenable(bool bypass, bool _eeprom = false);
+    ACS37800ERR getBypassNenable(bool *bypass); // Read and return the bypass_n_en flag (from _shadow_ memory)
     // Read and return the gain (from _shadow_ memory)
     ACS37800ERR getCurrentCoarseGain(float *currentCoarseGain);
 
     //Basic methods for accessing the volatile registers
     ACS37800ERR readRMS(float *vRMS, float *iRMS); // Read volatile register 0x20. Return the vRMS and iRMS.
+    ACS37800ERR readPowerActiveReactive(float *pActive, float *pReactive); // Read volatile register 0x21. Return the pactive and pimag (reactive)
+    ACS37800ERR readPowerFactor(float *pApparent, float *pFactor, bool *posangle, bool *pospf); // Read volatile register 0x22. Return the apparent power, power factor, leading / lagging, generated / consumed
     ACS37800ERR readInstantaneous(float *vInst, float *iInst, float *pInst); // Read volatile registers 0x2A and 0x2C. Return the vInst, iInst and pInst.
     ACS37800ERR readErrorFlags(ACS37800_REGISTER_2D_t *errorFlags); // Read volatile register 0x2D. Return its contents in errorFlags.
 
@@ -426,7 +428,7 @@ class ACS37800
 
     //Debug
     Stream *_debugPort; //The stream to send debug messages to if enabled. Usually Serial.
-  	boolean _printDebug = false; //Flag to print debugging variables
+  	bool _printDebug = false; //Flag to print debugging variables
 
     //ACS37800's I2C address
     uint8_t _ACS37800Address = ACS37800_DEFAULT_I2C_ADDRESS;

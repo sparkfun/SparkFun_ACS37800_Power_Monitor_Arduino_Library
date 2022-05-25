@@ -43,9 +43,9 @@ void setup()
 
 void loop()
 {
-  float volts;
-  float amps;
-  float watts;
+  float volts = 0.0;
+  float amps = 0.0;
+  float watts = 0.0;
 
   mySensor.readInstantaneous(&volts, &amps, &watts); // Read the instantaneous voltage, current and power
   Serial.print(F("Volts: "));
