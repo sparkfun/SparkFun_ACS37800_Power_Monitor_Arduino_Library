@@ -39,7 +39,7 @@ void setup()
 
   // We need to connect the LO pin to the 'low' side of the AC source.
   // So we need to set the divider resistance to 4M Ohms (instead of 2M).
-  mySensor.setDividerRes(4000000);
+  mySensor.setDividerRes(4000000); // Comment this line if you are using GND to measure the 'low' side of the AC voltage
 }
 
 void loop()
