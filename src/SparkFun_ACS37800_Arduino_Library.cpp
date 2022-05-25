@@ -227,7 +227,7 @@ ACS37800ERR ACS37800::setI2Caddress(uint8_t newAddress)
 }
 
 //Set the number of samples for RMS calculations. Bypass_N_Enable must be set/true for this to have effect.
-ACS37800ERR ACS37800::setNumberOfSamples(uint32_t numberOfSamples, boolean _eeprom)
+ACS37800ERR ACS37800::setNumberOfSamples(uint32_t numberOfSamples, bool _eeprom)
 {
   ACS37800ERR error = writeRegister(ACS37800_CUSTOMER_ACCESS_CODE, ACS37800_REGISTER_VOLATILE_2F); // Set the customer access code
 
@@ -353,7 +353,7 @@ ACS37800ERR ACS37800::getNumberOfSamples(uint32_t *numberOfSamples)
 }
 
 //Set/Clear the Bypass_N_Enable flag
-ACS37800ERR ACS37800::setBypassNenable(boolean bypass, boolean _eeprom)
+ACS37800ERR ACS37800::setBypassNenable(bool bypass, bool _eeprom)
 {
   ACS37800ERR error = writeRegister(ACS37800_CUSTOMER_ACCESS_CODE, ACS37800_REGISTER_VOLATILE_2F); // Set the customer access code
 
@@ -466,7 +466,7 @@ ACS37800ERR ACS37800::setBypassNenable(boolean bypass, boolean _eeprom)
 }
 
 //// Read and return the bypass_n_en flag from shadow memory
-ACS37800ERR ACS37800::getBypassNenable(boolean *bypass)
+ACS37800ERR ACS37800::getBypassNenable(bool *bypass)
 {
   ACS37800_REGISTER_0F_t store;
   ACS37800ERR error = readRegister(&store.data.all, ACS37800_REGISTER_SHADOW_1F); // Read register 1F
@@ -487,7 +487,7 @@ ACS37800ERR ACS37800::getBypassNenable(boolean *bypass)
     _debugPort->println(store.data.bits.bypass_n_en);
   }
 
-  *bypass = (boolean)store.data.bits.bypass_n_en; //Return bypass_n_en
+  *bypass = (bool)store.data.bits.bypass_n_en; //Return bypass_n_en
 
   return (error);
 }
@@ -844,7 +844,7 @@ ACS37800ERR ACS37800::readInstantaneous(float *vInst, float *iInst, float *pInst
     return (error); // Bail
   }
 
-  //Extract pinstant as signed int. Convert to VAR
+  //Extract pinstant as signed int. Convert to W
   //pinstant as actually int16_t but is stored in a uint32_t as a 16-bit bitfield
   signedUnsigned.unSigned = pstore.data.bits.pinstant;
   float power = (float)signedUnsigned.Signed;
