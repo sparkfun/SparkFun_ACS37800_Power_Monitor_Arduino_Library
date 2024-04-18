@@ -39,6 +39,10 @@ void setup()
   // Sample rate is 32kHz. Maximum number of samples is 1023 (0x3FF) (10-bit)
   mySensor.setNumberOfSamples(1023, true); // Set the number of samples in shadow memory and eeprom
   mySensor.setBypassNenable(true, true); // Enable bypass_n in shadow memory and eeprom
+
+  // By default current range is set for the 30A version of the ACS37800
+  // Uncomment if you are using the 90A version
+  // mySensor->setCurrentRange(90);
 }
 
 void loop()
