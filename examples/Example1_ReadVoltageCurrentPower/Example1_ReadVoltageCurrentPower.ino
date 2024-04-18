@@ -40,9 +40,9 @@ void setup()
   mySensor.setNumberOfSamples(1023, true); // Set the number of samples in shadow memory and eeprom
   mySensor.setBypassNenable(true, true); // Enable bypass_n in shadow memory and eeprom
 
-  // By default current range is set for the 30A version of the ACS37800
-  // Uncomment if you are using the 90A version
-  // mySensor->setCurrentRange(90);
+  // By default, the current range is set for the 30A version of the ACS37800
+  // Uncomment the next line if you are using the 90A version:
+  //mySensor.setCurrentRange(90);
 }
 
 void loop()
