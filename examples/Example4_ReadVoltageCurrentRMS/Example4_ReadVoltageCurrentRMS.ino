@@ -12,7 +12,7 @@
 #include "SparkFun_ACS37800_Arduino_Library.h" // Click here to get the library: http://librarymanager/All#SparkFun_ACS37800
 #include <Wire.h>
 
-ACS37800 mySensor; //Create an object of the ACS37800 class
+SparkFunACS37800 mySensor; //Create an object of the SparkFunACS37800 class
 
 void setup()
 {
@@ -21,7 +21,6 @@ void setup()
 
   Wire.begin();
 
-  //mySensor.enableDebugging(); // Uncomment this line to print useful debug messages to Serial
 
   //Initialize sensor using default I2C address
   if (mySensor.begin() == false)

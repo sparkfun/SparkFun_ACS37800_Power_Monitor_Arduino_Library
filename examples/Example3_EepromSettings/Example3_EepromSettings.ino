@@ -11,10 +11,8 @@
   This example allows you to read and modify the ACS37800 registers (both eeprom and shadow)
 
   Note:
-    The registers are locked by default. To unlock, write the customer access code 0x4F70656E to volatile regsiter 2F.
-    Register 2F is write-only. You cannot read the access code back again.
-    Register 30 will change from 0 to 1 if the code has been accepted.
-    You need to cycle the power to disable customer write access. Writing zero to register 2F does not disable write access.
+    The registers are locked by default. writeShadowRegister unlocks them by writing the customer access code
+    0x4F70656E to volatile register 2F before the write, and clears it afterwards.
 
   Typical defaults for the ACS37800KMACTR-030B3-I2C (+/- 30A) are:
 
@@ -50,7 +48,7 @@
 #include "SparkFun_ACS37800_Arduino_Library.h" // Click here to get the library: http://librarymanager/All#SparkFun_ACS37800
 #include <Wire.h>
 
-ACS37800 mySensor; //Create an object of the ACS37800 class
+SparkFunACS37800 mySensor; //Create an object of the SparkFunACS37800 class
 
 // Global copies of the register contents
 // EEPROM registers are 0B-0F. Shadow registers are 1B-1F. Volatile registers are 20-30.
@@ -59,8 +57,6 @@ ACS37800_REGISTER_0C_t reg1C;
 ACS37800_REGISTER_0D_t reg1D;
 ACS37800_REGISTER_0E_t reg1E;
 ACS37800_REGISTER_0F_t reg1F;
-uint32_t reg2F; // Customer access code
-uint32_t reg30; // Customer mode (write access)
 
 void setup()
 {
@@ -69,7 +65,6 @@ void setup()
 
   Wire.begin();
 
-  //mySensor.enableDebugging(); // Uncomment this line to print useful debug messages to Serial
 
   if (mySensor.begin(0x60) == false) //Initialize sensor using I2C address 0x60
   {
@@ -83,14 +78,11 @@ void setup()
 void loop()
 {
   // Read the shadow registers
-  mySensor.readRegister(&reg1B.data.all, ACS37800_REGISTER_SHADOW_1B);
-  mySensor.readRegister(&reg1C.data.all, ACS37800_REGISTER_SHADOW_1C);
-  mySensor.readRegister(&reg1D.data.all, ACS37800_REGISTER_SHADOW_1D);
-  mySensor.readRegister(&reg1E.data.all, ACS37800_REGISTER_SHADOW_1E);
-  mySensor.readRegister(&reg1F.data.all, ACS37800_REGISTER_SHADOW_1F);
-  // Read the volatile registers
-  mySensor.readRegister(&reg2F, ACS37800_REGISTER_VOLATILE_2F);
-  mySensor.readRegister(&reg30, ACS37800_REGISTER_VOLATILE_30);
+  mySensor.readShadowRegister(ACS37800_SHADOW_REGISTER_1B, &reg1B.data.all);
+  mySensor.readShadowRegister(ACS37800_SHADOW_REGISTER_1C, &reg1C.data.all);
+  mySensor.readShadowRegister(ACS37800_SHADOW_REGISTER_1D, &reg1D.data.all);
+  mySensor.readShadowRegister(ACS37800_SHADOW_REGISTER_1E, &reg1E.data.all);
+  mySensor.readShadowRegister(ACS37800_SHADOW_REGISTER_1F, &reg1F.data.all);
 
   // Pretty-print the register contents
   Serial.println();
@@ -126,23 +118,9 @@ void loop()
   Serial.print(F("24: Register 1F : n                 : ")); printDecHexBin(reg1F.data.bits.n, 10);
   Serial.print(F("25: Register 1F : bypass_n_en       : ")); printDecHexBin(reg1F.data.bits.bypass_n_en, 1);
 
-  Serial.print(F("26: Register 2F (customer access code)")); Serial.println();
-
-  Serial.println();
-  Serial.print(F("Customer write access is "));
-  if (reg30 == 0)
-  {
-    Serial.println(F("disabled"));
-    Serial.println(F("To enable write access: set register 2F to x4F70656E"));
-  }
-  else
-  {
-    Serial.println(F("enabled!"));
-  }
-  
   Serial.println();
   Serial.println(F("To change a value, enter the two digit code followed by b (binary) | x (hex) | d (decimal) followed by the new value and CR or LF"));
-  Serial.println(F("E.g.: 26x4F70656E\\r or 22b01\\r or 23d2\\r"));
+  Serial.println(F("E.g.: 24x3FF\\r or 22b01\\r or 23d2\\r"));
   Serial.println();
 
   clearSerial();
@@ -153,7 +131,7 @@ void loop()
   character = getChar(); // Get second digit of code
   if ((character < '0') || (character > '9')) return; // Check it is valid
   param += character - '0';
-  if (param > 26) return; // Check the two byte code is valid
+  if (param > 25) return; // Check the two byte code is valid
   
   character = getChar(); // Get the 'base' b, x or d
   if ((character != 'b') && (character != 'd') && (character != 'x')) return; // Check it is valid
@@ -226,136 +204,132 @@ void loop()
     case 0:
       newValue &= 0b111111111; // For safety, mask off any invalid bits
       reg1B.data.bits.qvo_fine = newValue;
-      mySensor.writeRegister(reg1B.data.all, ACS37800_REGISTER_EEPROM_0B); delay(100); mySensor.writeRegister(reg1B.data.all, ACS37800_REGISTER_SHADOW_1B); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1B, reg1B.data.all, true); // Write shadow and eeprom
       break;
     case 1:
       newValue &= 0b1111111111; // For safety, mask off any invalid bits
       reg1B.data.bits.sns_fine = newValue;
-      mySensor.writeRegister(reg1B.data.all, ACS37800_REGISTER_EEPROM_0B); delay(100); mySensor.writeRegister(reg1B.data.all, ACS37800_REGISTER_SHADOW_1B); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1B, reg1B.data.all, true); // Write shadow and eeprom
       break;
     case 2:
       newValue &= 0b111; // For safety, mask off any invalid bits
       reg1B.data.bits.crs_sns = newValue;
-      mySensor.writeRegister(reg1B.data.all, ACS37800_REGISTER_EEPROM_0B); delay(100); mySensor.writeRegister(reg1B.data.all, ACS37800_REGISTER_SHADOW_1B); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1B, reg1B.data.all, true); // Write shadow and eeprom
       break;
     case 3:
       newValue &= 0b1; // For safety, mask off any invalid bits
       reg1B.data.bits.iavgselen = newValue;
-      mySensor.writeRegister(reg1B.data.all, ACS37800_REGISTER_EEPROM_0B); delay(100); mySensor.writeRegister(reg1B.data.all, ACS37800_REGISTER_SHADOW_1B); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1B, reg1B.data.all, true); // Write shadow and eeprom
       break;
     case 4:
       newValue &= 0b1; // For safety, mask off any invalid bits
       reg1B.data.bits.pavgselen = newValue;
-      mySensor.writeRegister(reg1B.data.all, ACS37800_REGISTER_EEPROM_0B); delay(100); mySensor.writeRegister(reg1B.data.all, ACS37800_REGISTER_SHADOW_1B); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1B, reg1B.data.all, true); // Write shadow and eeprom
       break;
     case 5:
       newValue &= 0b1111111; // For safety, mask off any invalid bits
       reg1C.data.bits.rms_avg_1 = newValue;
-      mySensor.writeRegister(reg1C.data.all, ACS37800_REGISTER_EEPROM_0C); delay(100); mySensor.writeRegister(reg1C.data.all, ACS37800_REGISTER_SHADOW_1C); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1C, reg1C.data.all, true); // Write shadow and eeprom
       break;
     case 6:
       newValue &= 0b1111111111; // For safety, mask off any invalid bits
       reg1C.data.bits.rms_avg_2 = newValue;
-      mySensor.writeRegister(reg1C.data.all, ACS37800_REGISTER_EEPROM_0C); delay(100); mySensor.writeRegister(reg1C.data.all, ACS37800_REGISTER_SHADOW_1C); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1C, reg1C.data.all, true); // Write shadow and eeprom
       break;
     case 7:
       newValue &= 0b11111111; // For safety, mask off any invalid bits
       reg1C.data.bits.vchan_offset_code = newValue;
-      mySensor.writeRegister(reg1C.data.all, ACS37800_REGISTER_EEPROM_0C); delay(100); mySensor.writeRegister(reg1C.data.all, ACS37800_REGISTER_SHADOW_1C); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1C, reg1C.data.all, true); // Write shadow and eeprom
       break;
     case 8:
       newValue &= 0b1; // For safety, mask off any invalid bits
       reg1D.data.bits.ichan_del_en = newValue;
-      mySensor.writeRegister(reg1D.data.all, ACS37800_REGISTER_EEPROM_0D); delay(100); mySensor.writeRegister(reg1D.data.all, ACS37800_REGISTER_SHADOW_1D); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1D, reg1D.data.all, true); // Write shadow and eeprom
       break;
     case 9:
       newValue &= 0b111; // For safety, mask off any invalid bits
       reg1D.data.bits.chan_del_sel = newValue;
-      mySensor.writeRegister(reg1D.data.all, ACS37800_REGISTER_EEPROM_0D); delay(100); mySensor.writeRegister(reg1D.data.all, ACS37800_REGISTER_SHADOW_1D); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1D, reg1D.data.all, true); // Write shadow and eeprom
       break;
     case 10:
       newValue &= 0b11111111; // For safety, mask off any invalid bits
       reg1D.data.bits.fault = newValue;
-      mySensor.writeRegister(reg1D.data.all, ACS37800_REGISTER_EEPROM_0D); delay(100); mySensor.writeRegister(reg1D.data.all, ACS37800_REGISTER_SHADOW_1D); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1D, reg1D.data.all, true); // Write shadow and eeprom
       break;
     case 11:
       newValue &= 0b111; // For safety, mask off any invalid bits
       reg1D.data.bits.fltdly = newValue;
-      mySensor.writeRegister(reg1D.data.all, ACS37800_REGISTER_EEPROM_0D); delay(100); mySensor.writeRegister(reg1D.data.all, ACS37800_REGISTER_SHADOW_1D); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1D, reg1D.data.all, true); // Write shadow and eeprom
       break;
     case 12:
       newValue &= 0b111111; // For safety, mask off any invalid bits
       reg1E.data.bits.vevent_cycs = newValue;
-      mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_EEPROM_0E); delay(100); mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_SHADOW_1E); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1E, reg1E.data.all, true); // Write shadow and eeprom
       break;
     case 13:
       newValue &= 0b111111; // For safety, mask off any invalid bits
       reg1E.data.bits.overvreg = newValue;
-      mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_EEPROM_0E); delay(100); mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_SHADOW_1E); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1E, reg1E.data.all, true); // Write shadow and eeprom
       break;
     case 14:
       newValue &= 0b111111; // For safety, mask off any invalid bits
       reg1E.data.bits.undervreg = newValue;
-      mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_EEPROM_0E); delay(100); mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_SHADOW_1E); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1E, reg1E.data.all, true); // Write shadow and eeprom
       break;
     case 15:
       newValue &= 0b1; // For safety, mask off any invalid bits
       reg1E.data.bits.delaycnt_sel = newValue;
-      mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_EEPROM_0E); delay(100); mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_SHADOW_1E); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1E, reg1E.data.all, true); // Write shadow and eeprom
       break;
     case 16:
       newValue &= 0b1; // For safety, mask off any invalid bits
       reg1E.data.bits.halfcycle_en = newValue;
-      mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_EEPROM_0E); delay(100); mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_SHADOW_1E); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1E, reg1E.data.all, true); // Write shadow and eeprom
       break;
     case 17:
       newValue &= 0b1; // For safety, mask off any invalid bits
       reg1E.data.bits.squarewave_en = newValue;
-      mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_EEPROM_0E); delay(100); mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_SHADOW_1E); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1E, reg1E.data.all, true); // Write shadow and eeprom
       break;
     case 18:
       newValue &= 0b1; // For safety, mask off any invalid bits
       reg1E.data.bits.zerocrosschansel = newValue;
-      mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_EEPROM_0E); delay(100); mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_SHADOW_1E); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1E, reg1E.data.all, true); // Write shadow and eeprom
       break;
     case 19:
       newValue &= 0b1; // For safety, mask off any invalid bits
       reg1E.data.bits.zerocrossedgesel = newValue;
-      mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_EEPROM_0E); delay(100); mySensor.writeRegister(reg1E.data.all, ACS37800_REGISTER_SHADOW_1E); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1E, reg1E.data.all, true); // Write shadow and eeprom
       break;
     case 20:
       newValue &= 0b1111111; // For safety, mask off any invalid bits
       reg1F.data.bits.i2c_slv_addr = newValue;
-      mySensor.writeRegister(reg1F.data.all, ACS37800_REGISTER_EEPROM_0F); delay(100); mySensor.writeRegister(reg1F.data.all, ACS37800_REGISTER_SHADOW_1F); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1F, reg1F.data.all, true); // Write shadow and eeprom
       break;
     case 21:
       newValue &= 0b1; // For safety, mask off any invalid bits
       reg1F.data.bits.i2c_dis_slv_addr = newValue;
-      mySensor.writeRegister(reg1F.data.all, ACS37800_REGISTER_EEPROM_0F); delay(100); mySensor.writeRegister(reg1F.data.all, ACS37800_REGISTER_SHADOW_1F); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1F, reg1F.data.all, true); // Write shadow and eeprom
       break;
     case 22:
       newValue &= 0b11; // For safety, mask off any invalid bits
       reg1F.data.bits.dio_0_sel = newValue;
-      mySensor.writeRegister(reg1F.data.all, ACS37800_REGISTER_EEPROM_0F); delay(100); mySensor.writeRegister(reg1F.data.all, ACS37800_REGISTER_SHADOW_1F); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1F, reg1F.data.all, true); // Write shadow and eeprom
       break;
     case 23:
       newValue &= 0b11; // For safety, mask off any invalid bits
       reg1F.data.bits.dio_1_sel = newValue;
-      mySensor.writeRegister(reg1F.data.all, ACS37800_REGISTER_EEPROM_0F); delay(100); mySensor.writeRegister(reg1F.data.all, ACS37800_REGISTER_SHADOW_1F); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1F, reg1F.data.all, true); // Write shadow and eeprom
       break;
     case 24:
       newValue &= 0b1111111111; // For safety, mask off any invalid bits
       reg1F.data.bits.n = newValue;
-      mySensor.writeRegister(reg1F.data.all, ACS37800_REGISTER_EEPROM_0F); delay(100); mySensor.writeRegister(reg1F.data.all, ACS37800_REGISTER_SHADOW_1F); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1F, reg1F.data.all, true); // Write shadow and eeprom
       break;
     case 25:
       newValue &= 0b1; // For safety, mask off any invalid bits
       reg1F.data.bits.bypass_n_en = newValue;
-      mySensor.writeRegister(reg1F.data.all, ACS37800_REGISTER_EEPROM_0F); delay(100); mySensor.writeRegister(reg1F.data.all, ACS37800_REGISTER_SHADOW_1F);
-      break;
-    case 26:
-      reg2F = newValue;
-      mySensor.writeRegister(reg2F, ACS37800_REGISTER_VOLATILE_2F); delay(100);
+      mySensor.writeShadowRegister(ACS37800_SHADOW_REGISTER_1F, reg1F.data.all, true); // Write shadow and eeprom
       break;
   }
 }

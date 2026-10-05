@@ -14,7 +14,7 @@
 
 #define NEW_ADDRESS 0x60 //Set this to the address we are changing _to_
 
-ACS37800 mySensor; //Create an object of the ACS37800 class
+SparkFunACS37800 mySensor; //Create an object of the SparkFunACS37800 class
 
 void setup()
 {
@@ -71,7 +71,6 @@ void setup()
 
           // Change the address
           
-          //mySensor.enableDebugging(); // Uncomment this line to print useful debug messages to Serial
         
           //Initialize sensor
           if (mySensor.begin(address) == false)

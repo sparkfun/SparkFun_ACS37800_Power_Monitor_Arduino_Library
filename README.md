@@ -17,6 +17,15 @@ User configuration of the IC is available through on-chip EEPROM.
 
 Although the ACS37800 is available with both I<sup>2</sup>C and SPI interfaces, this library currently only supports communication over I2C.
 
+> **Note:**
+> Version 2.0 and above of this library is built on the [SparkFun Toolkit](https://github.com/sparkfun/SparkFun_Toolkit), which must also be installed (the Arduino Library Manager installs it automatically). The device driver is now platform independent (`src/sfTk/sfDevACS37800.*`) with a thin Arduino wrapper class, `SparkFunACS37800`.
+>
+> Version 2.0 is not completely backward compatible with version 1.x:
+> * Methods now return SparkFun Toolkit error codes (`sfTkError_t`, with `ksfTkErrOk` for success). The `ACS37800_SUCCESS` and other `ACS37800ERR` names are still defined and map to toolkit error codes.
+> * The `ACS37800` class is deprecated - use `SparkFunACS37800` instead.
+> * `readRegister()` and `writeRegister()` have been removed. Use `readShadowRegister()` and `writeShadowRegister()` to access the configuration registers - see Example3_EepromSettings.
+> * Debug printing has been removed. `enableDebugging()` is retained for compatibility but does nothing.
+
 SparkFun labored with love to create this code. Feel like supporting open source hardware?
 Buy a [board](https://www.sparkfun.com/products/17873) from SparkFun!
 
@@ -25,6 +34,8 @@ Repository Contents
 
 * **/examples** - Example sketches for the library (.ino). Run these from the Arduino IDE.
 * **/src** - Source files for the library (.cpp, .h).
+* **/src/sfTk** - Platform independent device driver, built on the SparkFun Toolkit.
+* **/docs** - Doxygen configuration for the library documentation.
 * **keywords.txt** - Keywords from this library that will be highlighted in the Arduino IDE.
 * **library.properties** - General library properties for the Arduino package manager.
 

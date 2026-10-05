@@ -1,0 +1,114 @@
+name: Cross-compilation Library Test
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+
+jobs:
+  compile-sketch:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        board:
+          # Mega
+          # https://github.com/arduino/ArduinoCore-avr/blob/master/boards.txt
+          - fqbn: arduino:avr:mega
+            name: arduino:avr
+            source-url: https://downloads.arduino.cc/packages/package_index.json
+
+          # ESP32
+          # https://github.com/espressif/arduino-esp32/blob/master/boards.txt
+          - fqbn: esp32:esp32:esp32
+            name: esp32:esp32
+            source-url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+          # ESP32-S2
+          # https://github.com/espressif/arduino-esp32/blob/master/boards.txt
+          - fqbn: esp32:esp32:esp32s2
+            name: esp32:esp32
+            source-url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+          # ESP32-C3
+          # https://github.com/espressif/arduino-esp32/blob/master/boards.txt
+          - fqbn: esp32:esp32:esp32c3
+            name: esp32:esp32
+            source-url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+          # ESP8266
+          # https://github.com/esp8266/Arduino/blob/master/boards.txt
+          - fqbn: esp8266:esp8266:thingdev
+            name: esp8266:esp8266
+            source-url: https://arduino.esp8266.com/stable/package_esp8266com_index.json
+
+          # SAMD21
+          # https://github.com/arduino/ArduinoCore-samd/blob/master/boards.txt
+          - fqbn: arduino:samd:mkr1000
+            name: arduino:samd
+            source-url: https://downloads.arduino.cc/packages/package_index.json
+
+          # Nano BLE 33 / nRF52840
+          # https://github.com/arduino/ArduinoCore-mbed/blob/master/boards.txt
+          - fqbn: arduino:mbed_nano:nano33ble
+            name: arduino:mbed_nano
+            source-url: https://downloads.arduino.cc/packages/package_index.json
+
+          # RP2040
+          # https://github.com/earlephilhower/arduino-pico/blob/master/boards.txt
+          - fqbn: rp2040:rp2040:sparkfun_promicrorp2040
+            name: rp2040:rp2040
+            source-url: https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+
+          # RP2350
+          # https://github.com/earlephilhower/arduino-pico/blob/master/boards.txt
+          - fqbn: rp2040:rp2040:sparkfun_promicrorp2350
+            name: rp2040:rp2040
+            source-url: https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+
+          # STM32
+          # https://github.com/stm32duino/Arduino_Core_STM32/blob/main/boards.txt
+          - fqbn: STMicroelectronics:stm32:GenF4
+            name: STMicroelectronics:stm32
+            source-url: https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+
+    # not using the arduino action to compile everything - it fails to load libraries at a given ref/branch
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Branch name
+        run: echo running on branch ${GITHUB_REF##*/}
+
+      # Setup Arduino command line
+      - name: Arduino - Install and setup the Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Arduino - Start config file
+        run: arduino-cli config init --additional-urls ${{ matrix.board.source-url}}
+
+      - name: Arduino - Update index
+        run: arduino-cli core update-index
+
+      - name: Arduino - Install platform
+        run: arduino-cli core install ${{ matrix.board.name}}
+
+      # This library depends on the SparkFun Toolkit
+      - name: Arduino - Install SparkFun Toolkit
+        run: |
+          arduino-cli lib update-index
+          arduino-cli lib install "SparkFun Toolkit"
+
+      - name: Compile Examples
+        run: |
+          for example in examples/*/; do
+            echo "::group::Compiling $example"
+            arduino-cli compile --fqbn ${{ matrix.board.fqbn }} --library . "$example" || exit 1
+            echo "::endgroup::"
+          done
